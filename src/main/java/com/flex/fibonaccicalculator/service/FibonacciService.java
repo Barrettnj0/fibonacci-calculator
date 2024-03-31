@@ -4,4 +4,5 @@ public interface FibonacciService {
     Integer getCurrent();
     Integer getNext();
     Integer getPrevious();
+
 }
