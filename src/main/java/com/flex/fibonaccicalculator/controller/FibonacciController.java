@@ -16,17 +16,17 @@ public class FibonacciController {
     private FibonacciService fibonacciService; // Allow Connection between controller and service layer
 
     @GetMapping("/current") // Current API endpoint
-    public Integer getCurrent() {
+    public String getCurrent() {
         return fibonacciService.getCurrent();
     }
 
     @GetMapping("/next") // Next API endpoint
-    public Integer getNext() {
+    public String getNext() {
         return fibonacciService.getNext();
     }
 
     @GetMapping("/previous") // Previous API endpoint
-    public Integer getPrevious() {
+    public String getPrevious() {
         return fibonacciService.getPrevious();
     }
 

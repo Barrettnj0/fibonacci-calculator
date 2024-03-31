@@ -1,7 +1,7 @@
 package com.flex.fibonaccicalculator.service;
 
 public interface FibonacciService {
-    Integer getCurrent();
-    Integer getNext();
-    Integer getPrevious();
+    String getCurrent();
+    String getNext();
+    String getPrevious();
 }
