@@ -16,6 +16,7 @@ public class FibonacciControllerTest {
     private String currentUrl;
     private String nextUrl;
     private String previousUrl;
+    private String jumpUrl;
 
     @LocalServerPort
     private int port; // Stores random port in 'port' variable
@@ -28,10 +29,11 @@ public class FibonacciControllerTest {
         currentUrl = "http://localhost:" + port + "/current"; // Gets url for current based on port used
         nextUrl = "http://localhost:" + port + "/next"; // Gets url for next based on port used
         previousUrl = "http://localhost:" + port + "/previous"; // Gets url for previous based on port used
+        jumpUrl = "http://localhost:" + port + "/jump/"; // Gets url for jump based on port used
     }
 
     @Test
-    public void testCurrentOnStart() { // Test initial response of /current
+    public void testCurrent() { // Test initial response of /current
         String currentResponse = restTemplate.getForEntity(currentUrl, String.class).getBody(); // Calls /current API and stores body in variable
 
         Assertions.assertEquals("Index: 0\nFibonacci number: 0", currentResponse);
@@ -77,6 +79,57 @@ public class FibonacciControllerTest {
         Assertions.assertEquals("Index goes below bounds for normal fibonacci sequence. Your index is still 0.", firstPreviousResponse);
         Assertions.assertEquals("Your current fibonacci index is now 3", secondPreviousResponse);
         Assertions.assertEquals("Index: 3\nFibonacci number: 2", currentResponse);
+    }
+
+    @Test
+    public void testJump() {
+
+        /* For this test, we check the possible errors that should be expected with /jump. Then we check jump itself as well as making sure
+        it calculated +1 or -1 correctly. Finally, we check a /previous condition that can only be achieved through jumping */
+
+        String stringJumpResponse = restTemplate.getForEntity(jumpUrl + "a", String.class).getBody();
+        String nonIntegerJumpResponse = restTemplate.getForEntity(jumpUrl + "3.5", String.class).getBody();
+        String negativeJumpResponse = restTemplate.getForEntity(jumpUrl + "-1", String.class).getBody();
+
+        String goodJumpResponse = restTemplate.getForEntity(jumpUrl + "8", String.class).getBody();
+        String goodCurrentResponse = restTemplate.getForEntity(currentUrl, String.class).getBody();
+
+        String nextResponse = restTemplate.getForEntity(nextUrl, String.class).getBody();
+        String nextNumResponse = restTemplate.getForEntity(currentUrl, String.class).getBody();
+
+        restTemplate.getForEntity(previousUrl, String.class).getBody(); // Go back to orignal jump index (8)
+
+        String firstPreviousResponse = restTemplate.getForEntity(previousUrl, String.class).getBody();
+        String firstPreviousNumResponse = restTemplate.getForEntity(currentUrl, String.class).getBody();
+        String secondPreviousResponse = restTemplate.getForEntity(previousUrl, String.class).getBody();
+        String secondPreviousNumResponse = restTemplate.getForEntity(currentUrl, String.class).getBody();
+
+        Assertions.assertEquals("You can only input integers 0 or greater to jump to. Your index is still 0.", stringJumpResponse);
+        // Checks if non-numbers will get an expected error message in response
+        Assertions.assertEquals("You can only input integers 0 or greater to jump to. Your index is still 0.", nonIntegerJumpResponse);
+        // Checks if non-integers will get an expected error message in response
+        Assertions.assertEquals("Index goes below bounds for normal fibonacci sequence. Your index is still 0.", negativeJumpResponse);
+        // Checks if negative integers will get an expected error message in response
+
+        Assertions.assertEquals("Your current fibonacci index is now 8", goodJumpResponse);
+        // Checks if /jump responds as expected for non-negative integers
+        Assertions.assertEquals("Index: 8\nFibonacci number: 21", goodCurrentResponse);
+        // Checks if corresponding jump gets correct fibonacci number
+
+        Assertions.assertEquals("Your current fibonacci index is now 9", nextResponse);
+        // Checks if fibonacci map received the correct index from \jump
+        Assertions.assertEquals("Index: 9\nFibonacci number: 34", nextNumResponse);
+        // Checks if corresponding number is correct from calculations of jump
+
+        Assertions.assertEquals("Your current fibonacci index is now 7", firstPreviousResponse);
+        // Checks if fibonacci map received the correct index from \jump
+        Assertions.assertEquals("Index: 7\nFibonacci number: 13", firstPreviousNumResponse);
+        // Checks if corresponding number is correct from calculations of jump
+        Assertions.assertEquals("Your current fibonacci index is now 6", secondPreviousResponse);
+        // Checks that decrement of index works properly after \jump
+        Assertions.assertEquals("Index: 6\nFibonacci number: 8", secondPreviousNumResponse);
+        // Checks that previous calculations work for fibonacci number after jumps beyond the current population
+
     }
 
 }

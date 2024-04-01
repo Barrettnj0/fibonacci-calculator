@@ -4,4 +4,5 @@ public interface FibonacciService {
     String getCurrent();
     String getNext();
     String getPrevious();
+    String getJump(String index);
 }

@@ -29,9 +29,8 @@ public class FibonacciServiceImpl implements FibonacciService {
         currentIndex++;
         LOGGER.info("Your index is now " + currentIndex);
 
-        if(currentIndex >= fibonacciMap.size()) { // Check if next index is already in HashMap. If index is created we already calculated the fibonacci number
-            LOGGER.info("Your 'next' index is not in the fibonacci map. Generating fibonacci number for index " + currentIndex + "...");
-            calcFibonacciNum(); // Use calcFibonacciNum() function. Putting this computation in its own function for tidiness.
+        if(!fibonacciMap.containsKey(currentIndex)) { // Check if next index is already in HashMap. If index is created we already calculated the fibonacci number
+            calcNextFibonacciNum(currentIndex); // Use calcFibonacciNum() function. Putting this computation in its own function for tidiness.
         }
 
         return "Your current fibonacci index is now " + currentIndex; // Send current index info back to user
@@ -39,26 +38,87 @@ public class FibonacciServiceImpl implements FibonacciService {
 
     @Override
     public String getPrevious() {
-        String indexMessage;
+        String returnMessage;
 
-        if(currentIndex == 0) { // Check if index is 0
-            indexMessage = "Index goes below bounds for normal fibonacci sequence. Your index is still 0."; //
-            /* Instead of decrementing index, just store this message about why the index will remain 0 as the fibonacci
-            sequence normally pertains to positive integers */
-        }
-        else {
+        try {
+            if(currentIndex == 0) { // Check if index is 0
+                throw new IndexOutOfBoundsException();
+            }
+
             currentIndex--;
-            indexMessage = "Your current fibonacci index is now " + currentIndex; // Send current index info back to user
+            if (!fibonacciMap.containsKey(currentIndex)) { // Check if next index is already in HashMap. This is only necessary if /jump endpoint is used
+                calcPreviousFibonacciNum(currentIndex); // Use calcFibonacciNum() function. Putting this computation in its own function for tidiness.
+            }
+            returnMessage = "Your current fibonacci index is now " + currentIndex;
+        } catch (IndexOutOfBoundsException e) {
+            LOGGER.error("User attempted to go below index 0.\nMessage: " + e);
+            returnMessage = "Index goes below bounds for normal fibonacci sequence. Your index is still 0.";
         }
-        return indexMessage;
+        return returnMessage; // Send current index info back to user
     }
 
-    private void calcFibonacciNum() {
-        Integer newFibonacciNum = fibonacciMap.get(currentIndex - 2) + fibonacciMap.get(currentIndex - 1);
+    @Override
+    public String getJump(String index) {
+        String returnMessage;
 
-        fibonacciMap.put(currentIndex, newFibonacciNum);
+        try {
+            Integer parsedIndex = Integer.parseInt(index);
 
-        LOGGER.info("Adding pair (" + currentIndex + ", " + newFibonacciNum + ") to fibonacci map.");
+            if(parsedIndex < 0) {
+                throw new IndexOutOfBoundsException();
+            }
+
+            currentIndex = parsedIndex;
+            if (!fibonacciMap.containsKey(currentIndex)) { // Check if new index is already in fibonacci map
+                calcFibonacciExpr(currentIndex);
+            }
+            if (!fibonacciMap.containsKey(currentIndex - 1) && currentIndex > 0) { // Check if previous index is already in fibonacci map
+                calcFibonacciExpr(currentIndex - 1);
+            }
+            if (!fibonacciMap.containsKey(currentIndex + 1)) { // Check if previous index is already in fibonacci map
+                calcNextFibonacciNum(currentIndex + 1); // We can save on some computing by using the simple addition computation
+            }
+            returnMessage = "Your current fibonacci index is now " + currentIndex; // Send current index info back to user;
+        } catch (NumberFormatException e){
+            LOGGER.error("Input format is not allowed for input: " + index + ". Index input can only be integers 0 or greater.\nMessage: " + e);
+            returnMessage = "You can only input integers 0 or greater to jump to. Your index is still " + currentIndex + ".";
+        } catch (IndexOutOfBoundsException e) {
+            returnMessage = "Index goes below bounds for normal fibonacci sequence. Your index is still " + currentIndex + ".";
+        }
+        return returnMessage;
+    }
+
+    private void calcNextFibonacciNum(Integer index) { // Adds next fibonacci number in line and maps it to its index
+        LOGGER.info("Your index is not in the fibonacci map. Generating fibonacci number for index " + index + " via 'next' method...");
+
+        Integer newFibonacciNum = fibonacciMap.get(index - 2) + fibonacciMap.get(index - 1);
+        fibonacciMap.put(index, newFibonacciNum);
+
+        LOGGER.info("Adding pair (" + index + ", " + newFibonacciNum + ") to fibonacci map.");
+    }
+
+    private void calcPreviousFibonacciNum(Integer index) { // Gets previous fibonacci number in line and maps it to its index
+        LOGGER.info("Your index is not in the fibonacci map. Generating fibonacci number for index " + index + " via 'previous' method...");
+
+        Integer newFibonacciNum = fibonacciMap.get(index + 2) - fibonacciMap.get(index + 1);
+        fibonacciMap.put(index, newFibonacciNum);
+
+        LOGGER.info("Adding pair (" + index + ", " + newFibonacciNum + ") to fibonacci map.");
+    }
+
+    private void calcFibonacciExpr(Integer index) { // Uses a closed form expression to calculate the fibonacci number and map it to its index
+        LOGGER.info("Calculating fibonacci number for index " + index + " using closed form expression...");
+        double GOLDEN_RATIO = ( 1 + Math.sqrt(5) ) / 2;
+        double GOLDEN_CONJUGATE = 1 - GOLDEN_RATIO;
+
+        Integer fibonacciNum = (int) ( // Closed form fibonacci expression math
+                ( Math.pow(GOLDEN_RATIO, index) - Math.pow(GOLDEN_CONJUGATE, index) )
+                        / ( GOLDEN_RATIO - GOLDEN_CONJUGATE )
+        );
+
+        fibonacciMap.put(index, fibonacciNum);
+
+        LOGGER.info("Adding pair (" + index + ", " + fibonacciNum + ") to fibonacci map.");
     }
 
 }
